@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorting Visualizer</title>
+   <link rel="stylesheet" href="style.css">
+   <script src="index.js"></script>
+</head>
+
+<body>
+    <h1>Sorting Visualizer</h1>
+    <canvas id="visualization" width="800" height="400"></canvas>
+    <br>
+    <input type="text" id="inputList" placeholder="Enter a list of numbers (comma-separated)">
+    <button id="generateButton">Generate List</button>
+    <br>
+    <!-- Buttons for sorting algorithms -->
+    <button class="sort-button" id="bubbleSortButton">Bubble Sort</button>
+    <button class="sort-button" id="insertionSortButton">Insertion Sort</button>
+    <button class="sort-button" id="mergeSortButton">Merge Sort</button>
+    <button class="sort-button" id="quickSortButton">Quick Sort</button>
+    <button class="sort-button" id="selectionSortButton">Selection Sort</button>
+
+    <button id="resetButton" enabled>Reset</button>
+    <input type="range" id="speedRange" min="1" max="100" value="50">
+    <label for="speedRange">Animation Speed</label>
+
+    <script>
+       const canvas = document.getElementById("visualization");
+const ctx = canvas.getContext("2d");
+
+const inputList = document.getElementById("inputList");
+const generateButton = document.getElementById("generateButton");
+const resetButton = document.getElementById("resetButton");
+const speedRange = document.getElementById("speedRange");
+
+let numbers = [];
+const barWidth = 15;
+const spacing = 5;
+let animationSpeed = 300;
+
+function parseInputList(input) {
+    return input.split(",").map((str) => parseInt(str.trim(), 10));
+}
+
+function drawList() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let x = spacing;
+    numbers.forEach((num, index) => {
+        ctx.fillStyle = "blue";
+        ctx.fillRect(x, canvas.height - num, barWidth, num);
+        ctx.fillStyle = "black";
+        ctx.fillText(num, x + barWidth / 2, canvas.height - num - 5);
+        x += barWidth + spacing;
+    });
+}
+
+async function quickSort(arr, start = 0, end = arr.length - 1) {
+    if (start >= end) {
+        return;
+    }
+
+    const pivotIndex = await partition(arr, start, end);
+    await quickSort(arr, start, pivotIndex - 1);
+    await quickSort(arr, pivotIndex + 1, end);
+}
+
+async function partition(arr, start, end) {
+    const pivotValue = arr[end];
+    let pivotIndex = start;
+
+    for (let i = start; i < end; i++) {
+        if (arr[i] < pivotValue) {
+            [arr[i], arr[pivotIndex]] = [arr[pivotIndex], arr[i]];
+            pivotIndex++;
+            drawList();
+            await sleep(animationSpeed);
+        }
+    }
+
+    [arr[end], arr[pivotIndex]] = [arr[pivotIndex], arr[end]];
+    drawList();
+    await sleep(animationSpeed);
+    return pivotIndex;
+}
+
+async function bubbleSort() {
+    const n = numbers.length;
+    let swapped;
+    do {
+        swapped = false;
+        for (let i = 0; i < n - 1; i++) {
+            if (numbers[i] > numbers[i + 1]) {
+                [numbers[i], numbers[i + 1]] = [numbers[i + 1], numbers[i]];
+                drawList();
+                await sleep(animationSpeed);
+                swapped = true;
+            }
+        }
+    } while (swapped);
+}
+
+async function insertionSort() {
+    const n = numbers.length;
+    for (let i = 1; i < n; i++) {
+        let current = numbers[i];
+        let j = i - 1;
+        while (j >= 0 && numbers[j] > current) {
+            numbers[j + 1] = numbers[j];
+            j--;
+            drawList();
+            await sleep(animationSpeed);
+        }
+        numbers[j + 1] = current;
+    }
+}
+
+async function selectionSort() {
+    const n = numbers.length;
+    for (let i = 0; i < n - 1; i++) {
+        let minIndex = i;
+        for (let j = i + 1; j < n; j++) {
+            if (numbers[j] < numbers[minIndex]) {
+                minIndex = j;
+            }
+        }
+        if (minIndex !== i) {
+            [numbers[i], numbers[minIndex]] = [numbers[minIndex], numbers[i]];
+            drawList();
+            await sleep(animationSpeed);
+        }
+    }
+}
+
+
+async function mergeSort(arr) {
+    if (arr.length <= 1) {
+        return arr;
+    }
+
+    const middle = Math.floor(arr.length / 2);
+    const left = arr.slice(0, middle);
+    const right = arr.slice(middle);
+
+    return merge(await mergeSort(left), await mergeSort(right));
+}
+
+async function merge(left, right) {
+    let result = [];
+    let leftIndex = 0;
+    let rightIndex = 0;
+
+    while (leftIndex < left.length && rightIndex < right.length) {
+        if (left[leftIndex] < right[rightIndex]) {
+            result.push(left[leftIndex]);
+            leftIndex++;
+        } else {
+            result.push(right[rightIndex]);
+            rightIndex++;
+        }
+        drawList();
+        await sleep(animationSpeed);
+    }
+
+    return result.concat(left.slice(leftIndex), right.slice(rightIndex));
+}
+
+async function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+generateButton.addEventListener("click", () => {
+    const input = inputList.value;
+    numbers = parseInputList(input);
+    drawList();
+    enableSortingButtons();
+});
+
+function enableSortingButtons() {
+    const sortingButtons = document.querySelectorAll(".sort-button");
+    sortingButtons.forEach((button) => {
+        button.disabled = false;
+    });
+}
+
+async function disableSortingButtons() {
+    const sortingButtons = document.querySelectorAll(".sort-button");
+    sortingButtons.forEach((button) => {
+        button.disabled = true;
+    });
+}
+
+async function reset() {
+    inputList.value = "";
+    numbers = [];
+    drawList();
+    enableSortingButtons();
+}
+
+resetButton.addEventListener("click", () => {
+    reset();
+});
+
+speedRange.addEventListener("input", (e) => {
+    animationSpeed = 300 - e.target.value;
+});
+
+// Attach sorting algorithms to buttons
+document.getElementById("bubbleSortButton").addEventListener("click", async () => {
+    disableSortingButtons();
+    await bubbleSort();
+    enableSortingButtons();
+});
+
+document.getElementById("insertionSortButton").addEventListener("click", async () => {
+    disableSortingButtons();
+    await insertionSort();
+    enableSortingButtons();
+});
+
+document.getElementById("mergeSortButton").addEventListener("click", async () => {
+    disableSortingButtons();
+    numbers = await mergeSort(numbers);
+    drawList();
+    enableSortingButtons();
+});
+
+document.getElementById("quickSortButton").addEventListener("click", async () => {
+    disableSortingButtons();
+    await quickSort(numbers);
+    enableSortingButtons();
+});
+
+document.getElementById("selectionSortButton").addEventListener("click", async () => {
+    disableSortingButtons();
+    await selectionSort();
+    enableSortingButtons();
+});
+    </script>
+</body>
+</html>
